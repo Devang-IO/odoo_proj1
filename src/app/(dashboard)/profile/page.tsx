@@ -118,11 +118,16 @@ export default function ProfilePage() {
         if (managerData) setManager(managerData);
       }
 
-      const { data: salaryData } = await supabase
+      const { data: salaryData, error: salaryError } = await supabase
         .from("salary_info")
         .select("*")
         .eq("employee_id", empData.id)
-        .single();
+        .maybeSingle();
+
+      if (salaryError) {
+        console.warn("Unable to load salary info:", salaryError.message);
+      }
+
       if (salaryData) setSalaryInfo(salaryData);
     }
 
@@ -157,18 +162,25 @@ export default function ProfilePage() {
     // Upload profile picture if changed
     if (profilePicture) {
       const fileExt = profilePicture.name.split(".").pop();
-      const fileName = `${employee.id}-profile.${fileExt}`;
+      const filePath = `${employee.id}/profile-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("profiles")
-        .upload(fileName, profilePicture, { upsert: true });
+        .upload(filePath, profilePicture, {
+          cacheControl: "3600",
+          contentType: profilePicture.type,
+        });
 
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from("profiles")
-          .getPublicUrl(fileName);
-        profilePictureUrl = urlData.publicUrl;
+      if (uploadError) {
+        console.error("Profile upload failed:", uploadError.message);
+        alert("Failed to upload profile picture. Please try again.");
+        return;
       }
+
+      const { data: urlData } = supabase.storage
+        .from("profiles")
+        .getPublicUrl(filePath);
+      profilePictureUrl = urlData.publicUrl;
     }
 
     const { error } = await supabase
