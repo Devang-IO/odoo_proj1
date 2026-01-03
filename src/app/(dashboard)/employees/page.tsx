@@ -138,7 +138,9 @@ export default function EmployeesPage() {
               </div>
               <div className="flex justify-center mb-3">
                 <Avatar className="w-16 h-16">
-                  <AvatarImage src={employee.profile_picture || ""} />
+                  {employee.profile_picture && (
+                    <AvatarImage src={employee.profile_picture} alt={`${employee.first_name} ${employee.last_name}`} />
+                  )}
                   <AvatarFallback className="bg-gray-200 text-gray-600 text-lg">
                     {getInitials(employee.first_name, employee.last_name)}
                   </AvatarFallback>

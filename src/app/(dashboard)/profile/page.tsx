@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Plus, X, Upload } from "lucide-react";
+import { Pencil, Plus, X, Camera } from "lucide-react";
 import { Employee, SalaryInfo } from "@/types";
 import { useCurrentEmployee } from "@/hooks/use-current-employee";
 import { calculateSalaryBreakdown } from "@/lib/utils/salary";
@@ -137,14 +137,16 @@ export default function ProfilePage() {
 
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setProfilePicture(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    setProfilePicture(file);
+    
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveResume = async () => {
@@ -276,15 +278,17 @@ export default function ProfilePage() {
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
-            <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 shadow-sm">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                className="hidden"
-              />
-              <Pencil className="w-4 h-4 text-gray-600" />
-            </label>
+            {editing && (
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 shadow-sm">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
+                />
+                <Camera className="w-4 h-4 text-gray-600" />
+              </label>
+            )}
           </div>
 
           {/* Basic Info */}

@@ -39,7 +39,9 @@ export function EmployeeViewDialog({
             {/* Left: Avatar and Basic Info */}
             <div className="flex items-start gap-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={employee.profile_picture || ""} />
+                {employee.profile_picture && (
+                  <AvatarImage src={employee.profile_picture} alt={`${employee.first_name} ${employee.last_name}`} />
+                )}
                 <AvatarFallback className="bg-pink-100 text-pink-600 text-2xl">
                   {getInitials()}
                 </AvatarFallback>
