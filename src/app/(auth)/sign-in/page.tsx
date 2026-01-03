@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 export default function SignInPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,18 +20,48 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    let emailToUse = loginId;
+
+    // If not an email, lookup email by login_id
+    if (!loginId.includes("@")) {
+      const { data: empData, error: lookupError } = await supabase
+        .from("employees")
+        .select("email")
+        .eq("login_id", loginId.toUpperCase())
+        .single();
+
+      if (lookupError || !empData) {
+        setError("Invalid Login ID");
+        setLoading(false);
+        return;
+      }
+
+      emailToUse = empData.email;
+    }
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: emailToUse,
       password,
     });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
       return;
     }
 
-    router.push("/employees");
+    // Get user role to redirect appropriately
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (userData?.role === "admin") {
+      router.push("/employees");
+    } else {
+      router.push("/attendance");
+    }
     router.refresh();
   };
 
@@ -41,19 +71,20 @@ export default function SignInPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="bg-gray-800 text-white px-6 py-3 rounded">
-            <span className="text-lg font-semibold">App/Web Logo</span>
+            <span className="text-lg font-semibold">Dayflow</span>
           </div>
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Login Id/Email :-</Label>
+            <Label htmlFor="loginId">Login Id/Email :-</Label>
             <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="loginId"
+              type="text"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
               required
+              placeholder="Email or Login ID"
               className="border-gray-300"
             />
           </div>
@@ -82,8 +113,6 @@ export default function SignInPage() {
             {loading ? "Signing in..." : "SIGN IN"}
           </Button>
         </form>
-
-
       </div>
     </div>
   );

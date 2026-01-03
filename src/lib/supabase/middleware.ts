@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/sign-in", "/sign-up"];
+  const publicRoutes = ["/sign-in"];
   const isPublicRoute = publicRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
@@ -46,9 +46,35 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isPublicRoute) {
+    // Get user role
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
     const url = request.nextUrl.clone();
-    url.pathname = "/employees";
+    if (userData?.role === "admin") {
+      url.pathname = "/employees";
+    } else {
+      url.pathname = "/attendance";
+    }
     return NextResponse.redirect(url);
+  }
+
+  // Protect admin-only routes
+  if (user && request.nextUrl.pathname.startsWith("/employees")) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (userData?.role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/attendance";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

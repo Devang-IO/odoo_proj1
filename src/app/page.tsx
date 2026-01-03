@@ -1,5 +1,24 @@
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
-  redirect("/sign-in");
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  // Get user role
+  const { data: userData } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (userData?.role === "admin") {
+    redirect("/employees");
+  } else {
+    redirect("/attendance");
+  }
 }
