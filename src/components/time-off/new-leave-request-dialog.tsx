@@ -70,13 +70,20 @@ export function NewLeaveRequestDialog({
       return;
     }
 
+    // Validate sick leave attachment
+    if (formData.leaveType === "sick" && !attachmentFile) {
+      setError("Medical certificate is required for sick leave");
+      return;
+    }
+
     setLoading(true);
 
     try {
       let attachmentUrl = null;
 
-      // Upload attachment if provided (for sick leave)
+      // Upload attachment if provided
       if (attachmentFile) {
+        console.log("Uploading file:", attachmentFile.name);
         const fileExt = attachmentFile.name.split(".").pop();
         const fileName = `${employeeId}-${Date.now()}.${fileExt}`;
 
@@ -84,13 +91,20 @@ export function NewLeaveRequestDialog({
           .from("attachments")
           .upload(fileName, attachmentFile);
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("attachments")
-            .getPublicUrl(fileName);
-          attachmentUrl = urlData.publicUrl;
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          throw new Error(`Failed to upload document: ${uploadError.message}`);
         }
+
+        const { data: urlData } = supabase.storage
+          .from("attachments")
+          .getPublicUrl(fileName);
+        
+        attachmentUrl = urlData.publicUrl;
+        console.log("File uploaded successfully:", attachmentUrl);
       }
+
+      console.log("Creating leave request with attachment_url:", attachmentUrl);
 
       const { error: insertError } = await supabase
         .from("leave_requests")
@@ -189,29 +203,49 @@ export function NewLeaveRequestDialog({
             </div>
           </div>
 
-          {/* Attachment (for sick leave) */}
-          {formData.leaveType === "sick" && (
-            <div className="space-y-2">
-              <Label>Attachment</Label>
-              <div className="flex items-center gap-2">
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                  <div className="flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50">
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm">
-                      {attachmentFile ? attachmentFile.name : "Upload certificate"}
-                    </span>
-                  </div>
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">(For sick leave certificate)</p>
+          {/* Attachment */}
+          <div className="space-y-2">
+            <Label>
+              Attachment 
+              {formData.leaveType === "sick" && <span className="text-red-500">*</span>}
+              {formData.leaveType !== "sick" && <span className="text-gray-500">(Optional)</span>}
+            </Label>
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50">
+                  <Upload className="w-4 h-4" />
+                  <span className="text-sm">
+                    {attachmentFile ? attachmentFile.name : 
+                      formData.leaveType === "sick" ? "Upload certificate" : "Upload document"
+                    }
+                  </span>
+                </div>
+              </label>
+              {attachmentFile && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachmentFile(null)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Remove
+                </Button>
+              )}
             </div>
-          )}
+            <p className="text-xs text-gray-500">
+              {formData.leaveType === "sick" 
+                ? "Medical certificate required for sick leave" 
+                : "Upload supporting documents (optional)"
+              }
+            </p>
+          </div>
 
           {/* Remarks */}
           <div className="space-y-2">

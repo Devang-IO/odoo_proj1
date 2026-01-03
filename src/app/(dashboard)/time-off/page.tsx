@@ -12,13 +12,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Check, X, Plus } from "lucide-react";
+import { Search, Check, X, Plus, FileText, Download, Eye, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { LeaveRequest, LeaveBalance } from "@/types";
 import { useCurrentEmployee } from "@/hooks/use-current-employee";
 import { NewLeaveRequestDialog } from "@/components/time-off/new-leave-request-dialog";
+import { LeaveRequestDetailsDialog } from "@/components/time-off/leave-request-details-dialog";
+import { StorageTest } from "@/components/debug/storage-test";
+import { DatabaseCheck } from "@/components/debug/database-check";
 
-interface LeaveRequestWithEmployee extends LeaveRequest {
+interface LeaveRequestWithEmployee extends Omit<LeaveRequest, 'employee'> {
   employee: {
     first_name: string;
     last_name: string;
@@ -34,6 +37,8 @@ export default function TimeOffPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequestWithEmployee | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const fetchLeaveRequests = async () => {
     if (!employee && !isAdmin) return;
@@ -58,6 +63,15 @@ export default function TimeOffPage() {
     if (error) {
       console.error("Error fetching leave requests:", error);
     } else {
+      console.log("Fetched leave requests:", data);
+      // Log attachment URLs for debugging
+      data?.forEach(request => {
+        if (request.attachment_url) {
+          console.log(`Request ${request.id} has attachment: ${request.attachment_url}`);
+        } else {
+          console.log(`Request ${request.id} has no attachment`);
+        }
+      });
       setLeaveRequests(data || []);
     }
 
@@ -86,6 +100,7 @@ export default function TimeOffPage() {
   }, [userLoading, employee, isAdmin]);
 
   const handleApprove = async (id: string) => {
+    console.log("Attempting to approve request:", id);
     const { error } = await supabase
       .from("leave_requests")
       .update({
@@ -97,13 +112,16 @@ export default function TimeOffPage() {
 
     if (error) {
       console.error("Error approving leave:", error);
-      alert("Failed to approve leave request");
+      alert(`Failed to approve leave request: ${error.message}`);
     } else {
+      console.log("Successfully approved request");
       fetchLeaveRequests();
+      setShowDetailsDialog(false);
     }
   };
 
   const handleReject = async (id: string) => {
+    console.log("Attempting to reject request:", id);
     const { error } = await supabase
       .from("leave_requests")
       .update({
@@ -115,10 +133,17 @@ export default function TimeOffPage() {
 
     if (error) {
       console.error("Error rejecting leave:", error);
-      alert("Failed to reject leave request");
+      alert(`Failed to reject leave request: ${error.message}`);
     } else {
+      console.log("Successfully rejected request");
       fetchLeaveRequests();
+      setShowDetailsDialog(false);
     }
+  };
+
+  const handleRowClick = (request: LeaveRequestWithEmployee) => {
+    setSelectedRequest(request);
+    setShowDetailsDialog(true);
   };
 
   const filteredRequests = leaveRequests.filter((request) => {
@@ -159,9 +184,28 @@ export default function TimeOffPage() {
 
   return (
     <div>
+      {/* Debug Components - Remove in production */}
+      {isAdmin && (
+        <div className="mb-4 space-y-4">
+          <StorageTest />
+          <DatabaseCheck />
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-blue-100 border border-blue-300 rounded-t-lg px-4 py-2">
-        <h1 className="font-medium">Time Off</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-medium">Time Off</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchLeaveRequests}
+            className="flex items-center gap-2 bg-white"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Controls & Balance */}
@@ -226,12 +270,17 @@ export default function TimeOffPage() {
                 <TableHead>End Date</TableHead>
                 <TableHead>Time Off Type</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Document</TableHead>
                 {isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRequests.map((request) => (
-                <TableRow key={request.id}>
+                <TableRow 
+                  key={request.id} 
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleRowClick(request)}
+                >
                   <TableCell>
                     {request.employee.first_name} {request.employee.last_name}
                   </TableCell>
@@ -259,15 +308,28 @@ export default function TimeOffPage() {
                       {request.status}
                     </span>
                   </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {request.attachment_url ? (
+                      <div className="flex items-center gap-1">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span className="text-xs text-blue-600">
+                          {isAdmin ? "Available" : "Uploaded"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-xs">No document</span>
+                    )}
+                  </TableCell>
                   {isAdmin && (
-                    <TableCell>
-                      {request.status === "pending" && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {request.status === "pending" ? (
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                             onClick={() => handleApprove(request.id)}
+                            title="Approve request"
                           >
                             <Check className="w-4 h-4" />
                           </Button>
@@ -276,10 +338,15 @@ export default function TimeOffPage() {
                             variant="ghost"
                             className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleReject(request.id)}
+                            title="Reject request"
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">
+                          {request.status === "approved" ? "Approved" : "Rejected"}
+                        </span>
                       )}
                     </TableCell>
                   )}
@@ -299,6 +366,16 @@ export default function TimeOffPage() {
           onSuccess={fetchLeaveRequests}
         />
       )}
+
+      {/* Leave Request Details Dialog */}
+      <LeaveRequestDetailsDialog
+        request={selectedRequest}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

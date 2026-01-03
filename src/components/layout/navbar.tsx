@@ -30,8 +30,8 @@ export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [company, setCompany] = useState<{ name: string; logo_url: string | null } | null>(null);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [todayAttendance, setTodayAttendance] = useState<{ id: string; check_in: string } | null>(null);
+  const [attendanceState, setAttendanceState] = useState<"check-in" | "check-out" | "done">("check-in");
+  const [todayAttendance, setTodayAttendance] = useState<{ id: string; check_in: string; check_out?: string } | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -68,8 +68,22 @@ export function Navbar() {
           .single();
 
         if (attendanceData) {
-          setTodayAttendance({ id: attendanceData.id, check_in: attendanceData.check_in });
-          setIsCheckedIn(!!attendanceData.check_in && !attendanceData.check_out);
+          setTodayAttendance({ 
+            id: attendanceData.id, 
+            check_in: attendanceData.check_in,
+            check_out: attendanceData.check_out 
+          });
+          
+          // Determine attendance state
+          if (attendanceData.check_out) {
+            setAttendanceState("done"); // Both check-in and check-out completed
+          } else if (attendanceData.check_in) {
+            setAttendanceState("check-out"); // Checked in, waiting for check-out
+          } else {
+            setAttendanceState("check-in"); // Not checked in yet
+          }
+        } else {
+          setAttendanceState("check-in"); // No attendance record for today
         }
       }
     };
@@ -78,7 +92,7 @@ export function Navbar() {
   }, [supabase]);
 
   const handleCheckIn = async () => {
-    if (!employee) return;
+    if (!employee || attendanceState !== "check-in") return;
 
     const today = format(new Date(), "yyyy-MM-dd");
     const now = format(new Date(), "HH:mm:ss");
@@ -96,12 +110,12 @@ export function Navbar() {
 
     if (!error && data) {
       setTodayAttendance({ id: data.id, check_in: data.check_in });
-      setIsCheckedIn(true);
+      setAttendanceState("check-out");
     }
   };
 
   const handleCheckOut = async () => {
-    if (!todayAttendance) return;
+    if (!todayAttendance || attendanceState !== "check-out") return;
 
     const now = format(new Date(), "HH:mm:ss");
 
@@ -111,8 +125,18 @@ export function Navbar() {
       .eq("id", todayAttendance.id);
 
     if (!error) {
-      setIsCheckedIn(false);
+      setTodayAttendance({ ...todayAttendance, check_out: now });
+      setAttendanceState("done");
     }
+  };
+
+  const handleAttendanceClick = () => {
+    if (attendanceState === "check-in") {
+      handleCheckIn();
+    } else if (attendanceState === "check-out") {
+      handleCheckOut();
+    }
+    // Do nothing if attendanceState === "done"
   };
 
   const handleSignOut = async () => {
@@ -131,20 +155,20 @@ export function Navbar() {
   const isAdmin = user?.role === "admin";
 
   return (
-    <nav className="bg-white border-b border-gray-200">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* Left: Logo and Nav Items */}
-          <div className="flex items-center gap-8">
-            <Link href="/employees" className="flex items-center gap-2">
+          <div className="flex items-center space-x-8">
+            <Link href="/employees" className="flex items-center space-x-3">
               {company?.logo_url ? (
                 <img src={company.logo_url} alt={company.name} className="h-8 w-auto" />
               ) : (
-                <span className="font-semibold text-lg">{company?.name || "Dayflow"}</span>
+                <span className="font-semibold text-xl text-gray-900">{company?.name || "Dayflow"}</span>
               )}
             </Link>
 
-            <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center space-x-1">
               {navItems.map((item) => {
                 // Hide Employees tab for non-admin
                 if (item.href === "/employees" && !isAdmin) return null;
@@ -154,10 +178,10 @@ export function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                       isActive
-                        ? "bg-blue-100 text-blue-700 border border-blue-300"
-                        : "text-gray-600 hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }`}
                   >
                     {item.label}
@@ -168,23 +192,36 @@ export function Navbar() {
           </div>
 
           {/* Right: Status Indicator and Profile */}
-          <div className="flex items-center gap-4">
-            {/* Status Indicator - Only for employees */}
+          <div className="flex items-center space-x-4">
+            {/* Clickable Status Indicator - Only for employees */}
             {!isAdmin && (
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  isCheckedIn ? "bg-green-500" : "bg-red-500"
-                }`}
+              <button
+                onClick={handleAttendanceClick}
+                disabled={attendanceState === "done"}
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                  attendanceState === "check-in"
+                    ? "bg-red-500 hover:bg-red-600 cursor-pointer shadow-sm"
+                    : attendanceState === "check-out"
+                    ? "bg-green-500 hover:bg-green-600 cursor-pointer shadow-sm"
+                    : "bg-red-500 cursor-not-allowed opacity-60"
+                } ${attendanceState !== "done" ? "hover:scale-125" : ""}`}
+                title={
+                  attendanceState === "check-in"
+                    ? "Click to Check In"
+                    : attendanceState === "check-out"
+                    ? "Click to Check Out"
+                    : "Attendance completed for today"
+                }
               />
             )}
 
             {/* Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={employee?.profile_picture || ""} />
-                    <AvatarFallback className="bg-blue-100 text-blue-700">
+                    <AvatarFallback className="bg-gray-100 text-gray-700 text-sm">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -196,22 +233,6 @@ export function Navbar() {
                     My Profile
                   </Link>
                 </DropdownMenuItem>
-
-                {/* Check In / Check Out - Only for employees */}
-                {!isAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    {!isCheckedIn ? (
-                      <DropdownMenuItem onClick={handleCheckIn} className="cursor-pointer">
-                        Check In →
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={handleCheckOut} className="cursor-pointer">
-                        Check Out →
-                      </DropdownMenuItem>
-                    )}
-                  </>
-                )}
 
                 <DropdownMenuSeparator />
 

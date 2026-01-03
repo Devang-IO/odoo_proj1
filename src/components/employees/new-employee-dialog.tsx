@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { generateRandomPassword } from "@/lib/utils/generate-employee-id";
+import { EmployeeCredentialsModal } from "./employee-credentials-modal";
 
 interface NewEmployeeDialogProps {
   open: boolean;
@@ -29,6 +30,13 @@ export function NewEmployeeDialog({
   const [error, setError] = useState("");
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [companyPrefix, setCompanyPrefix] = useState("DF");
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [employeeCredentials, setEmployeeCredentials] = useState<{
+    loginId: string;
+    password: string;
+    email: string;
+    name: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -54,7 +62,7 @@ export function NewEmployeeDialog({
 
       if (empData?.company_id) {
         setCompanyId(empData.company_id);
-        if (empData.companies) {
+        if (empData.companies && typeof empData.companies === 'object' && 'prefix' in empData.companies) {
           setCompanyPrefix((empData.companies as { prefix: string }).prefix);
         }
       }
@@ -120,8 +128,13 @@ export function NewEmployeeDialog({
 
       if (empError) throw empError;
 
-      // Show credentials (in real app, send via email)
-      alert(`Employee created!\n\nLogin ID: ${loginId}\nEmail: ${formData.email}\nTemporary Password: ${tempPassword}\n\nPlease share these credentials with the employee.`);
+      // Set credentials for modal
+      setEmployeeCredentials({
+        loginId,
+        password: tempPassword,
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`,
+      });
 
       // Reset form
       setFormData({
@@ -135,7 +148,9 @@ export function NewEmployeeDialog({
         dateOfJoining: new Date().toISOString().split("T")[0],
       });
 
+      // Close main dialog and show credentials
       onOpenChange(false);
+      setShowCredentials(true);
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create employee");
@@ -145,6 +160,7 @@ export function NewEmployeeDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -258,5 +274,13 @@ export function NewEmployeeDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Employee Credentials Modal */}
+    <EmployeeCredentialsModal
+      open={showCredentials}
+      onOpenChange={setShowCredentials}
+      credentials={employeeCredentials}
+    />
+  </>
   );
 }

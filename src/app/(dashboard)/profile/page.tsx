@@ -19,7 +19,7 @@ import {
 import { Pencil, Plus, X, Camera } from "lucide-react";
 import { Employee, SalaryInfo } from "@/types";
 import { useCurrentEmployee } from "@/hooks/use-current-employee";
-import { calculateSalaryBreakdown } from "@/lib/utils/salary";
+import { SalaryInfoView } from "@/components/employees/salary-info-view";
 
 export default function ProfilePage() {
   const supabase = createClient();
@@ -270,8 +270,6 @@ export default function ProfilePage() {
     return <div className="text-center py-12 text-gray-500">Profile not found</div>;
   }
 
-  const salaryBreakdown = salaryInfo ? calculateSalaryBreakdown(salaryInfo) : null;
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -338,7 +336,7 @@ export default function ProfilePage() {
           <TabsList>
             <TabsTrigger value="resume">Resume</TabsTrigger>
             <TabsTrigger value="private">Private Info</TabsTrigger>
-            {isAdmin && <TabsTrigger value="salary">Salary Info</TabsTrigger>}
+            <TabsTrigger value="salary">Salary Info</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -679,53 +677,10 @@ export default function ProfilePage() {
             </div>
           </TabsContent>
 
-          {/* Salary Info Tab - Admin Only */}
-          {isAdmin && (
-            <TabsContent value="salary" className="pt-4">
-              {salaryInfo && salaryBreakdown ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Month Wage</Label>
-                      <p className="text-lg font-medium">₹{salaryInfo.monthly_wage.toLocaleString()} / Month</p>
-                    </div>
-                    <div>
-                      <Label>Yearly Wage</Label>
-                      <p className="text-lg font-medium">₹{salaryInfo.yearly_wage.toLocaleString()} / Yearly</p>
-                    </div>
-                    <div>
-                      <Label>Working Days</Label>
-                      <p className="text-lg font-medium">{salaryInfo.working_days_per_week} days/week</p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Salary Components</h4>
-                      <SalaryRow label="Basic Salary" amount={salaryBreakdown.basicSalary} percentage={salaryInfo.basic_salary_percentage} />
-                      <SalaryRow label="House Rent Allowance" amount={salaryBreakdown.hra} percentage={salaryInfo.hra_percentage} />
-                      <SalaryRow label="Standard Allowance" amount={salaryBreakdown.standardAllowance} percentage={salaryInfo.standard_allowance_percentage} />
-                      <SalaryRow label="Performance Bonus" amount={salaryBreakdown.performanceBonus} percentage={salaryInfo.performance_bonus_percentage} />
-                      <SalaryRow label="Leave Travel Allowance" amount={salaryBreakdown.leaveTravelAllowance} percentage={salaryInfo.leave_travel_allowance_percentage} />
-                      <SalaryRow label="Fixed Allowance" amount={salaryBreakdown.fixedAllowance} />
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="font-medium">PF Contribution</h4>
-                      <SalaryRow label="Employee" amount={salaryBreakdown.pfEmployee} percentage={salaryInfo.pf_employee_percentage} />
-                      <SalaryRow label="Employer" amount={salaryBreakdown.pfEmployer} percentage={salaryInfo.pf_employer_percentage} />
-                      
-                      <h4 className="font-medium mt-4">Tax Deductions</h4>
-                      <SalaryRow label="Professional Tax" amount={salaryBreakdown.professionalTax} />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500">No salary information available.</p>
-              )}
-            </TabsContent>
-          )}
+          {/* Salary Info Tab */}
+          <TabsContent value="salary" className="pt-4">
+            <SalaryInfoView salaryInfo={salaryInfo} isEditable={false} />
+          </TabsContent>
 
           {/* Security Tab */}
           <TabsContent value="security" className="pt-4">
@@ -741,20 +696,6 @@ export default function ProfilePage() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
-  );
-}
-
-function SalaryRow({ label, amount, percentage }: { label: string; amount: number; percentage?: number }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-600">{label}</span>
-      <div className="text-right">
-        <span className="font-medium">₹{amount.toLocaleString()}</span>
-        {percentage !== undefined && (
-          <span className="text-gray-400 ml-2">{percentage}%</span>
-        )}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 "use client";
 
-import { Employee } from "@/types";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Employee, SalaryInfo } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -10,27 +12,85 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import { SalaryInfoView } from "./salary-info-view";
+import { SalaryInfoEdit } from "./salary-info-edit";
+import { DeleteEmployeeDialog } from "./delete-employee-dialog";
+import { useCurrentEmployee } from "@/hooks/use-current-employee";
 
 interface EmployeeViewDialogProps {
   employee: Employee;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEmployeeDeleted?: () => void;
 }
 
 export function EmployeeViewDialog({
   employee,
   open,
   onOpenChange,
+  onEmployeeDeleted,
 }: EmployeeViewDialogProps) {
+  const supabase = createClient();
+  const { isAdmin } = useCurrentEmployee();
+  const [salaryInfo, setSalaryInfo] = useState<SalaryInfo | null>(null);
+  const [editingSalary, setEditingSalary] = useState(false);
+  const [loadingSalary, setLoadingSalary] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const getInitials = () => {
     return `${employee.first_name[0]}${employee.last_name[0]}`.toUpperCase();
+  };
+
+  const fetchSalaryInfo = async () => {
+    setLoadingSalary(true);
+    const { data } = await supabase
+      .from("salary_info")
+      .select("*")
+      .eq("employee_id", employee.id)
+      .single();
+    
+    setSalaryInfo(data);
+    setLoadingSalary(false);
+  };
+
+  useEffect(() => {
+    if (open && employee.id) {
+      fetchSalaryInfo();
+    }
+  }, [open, employee.id]);
+
+  const handleSalarySave = (updatedSalaryInfo: SalaryInfo) => {
+    setSalaryInfo(updatedSalaryInfo);
+    setEditingSalary(false);
+  };
+
+  const handleEmployeeDeleted = () => {
+    onOpenChange(false);
+    if (onEmployeeDeleted) {
+      onEmployeeDeleted();
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Employee Profile</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Employee Profile</DialogTitle>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Employee
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -163,9 +223,36 @@ export function EmployeeViewDialog({
 
             {/* Salary Info Tab */}
             <TabsContent value="salary" className="pt-4">
-              <p className="text-sm text-gray-500">
-                Salary information will be displayed here.
-              </p>
+              {editingSalary ? (
+                <SalaryInfoEdit
+                  employeeId={employee.id}
+                  salaryInfo={salaryInfo}
+                  onSave={handleSalarySave}
+                  onCancel={() => setEditingSalary(false)}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {isAdmin && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingSalary(true)}
+                      >
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit Salary
+                      </Button>
+                    </div>
+                  )}
+                  {loadingSalary ? (
+                    <div className="text-center py-8 text-gray-500">
+                      Loading salary information...
+                    </div>
+                  ) : (
+                    <SalaryInfoView salaryInfo={salaryInfo} isEditable={isAdmin} />
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             {/* Security Tab */}
@@ -178,6 +265,14 @@ export function EmployeeViewDialog({
           </Tabs>
         </div>
       </DialogContent>
+
+      {/* Delete Employee Dialog */}
+      <DeleteEmployeeDialog
+        employee={employee}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onSuccess={handleEmployeeDeleted}
+      />
     </Dialog>
   );
 }

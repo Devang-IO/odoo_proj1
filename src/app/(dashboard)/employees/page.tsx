@@ -9,6 +9,7 @@ import { Employee } from "@/types";
 import { Plus, Search, Plane, Circle } from "lucide-react";
 import { NewEmployeeDialog } from "@/components/employees/new-employee-dialog";
 import { EmployeeViewDialog } from "@/components/employees/employee-view-dialog";
+import { CardSkeleton } from "@/components/ui/loading-skeletons";
 
 type AttendanceStatus = "present" | "absent" | "leave";
 
@@ -165,6 +166,10 @@ export default function EmployeesPage() {
           employee={selectedEmployee}
           open={!!selectedEmployee}
           onOpenChange={(open) => !open && setSelectedEmployee(null)}
+          onEmployeeDeleted={() => {
+            setSelectedEmployee(null);
+            fetchEmployees();
+          }}
         />
       )}
     </div>
