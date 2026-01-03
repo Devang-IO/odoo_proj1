@@ -169,12 +169,14 @@ export function Navbar() {
 
           {/* Right: Status Indicator and Profile */}
           <div className="flex items-center gap-4">
-            {/* Status Indicator */}
-            <div
-              className={`w-4 h-4 rounded-full ${
-                isCheckedIn ? "bg-green-500" : "bg-red-500"
-              }`}
-            />
+            {/* Status Indicator - Only for employees */}
+            {!isAdmin && (
+              <div
+                className={`w-4 h-4 rounded-full ${
+                  isCheckedIn ? "bg-green-500" : "bg-red-500"
+                }`}
+              />
+            )}
 
             {/* Profile Dropdown */}
             <DropdownMenu>
@@ -195,17 +197,20 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-
-                {/* Check In / Check Out */}
-                {!isCheckedIn ? (
-                  <DropdownMenuItem onClick={handleCheckIn} className="cursor-pointer">
-                    Check In →
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={handleCheckOut} className="cursor-pointer">
-                    Check Out →
-                  </DropdownMenuItem>
+                {/* Check In / Check Out - Only for employees */}
+                {!isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {!isCheckedIn ? (
+                      <DropdownMenuItem onClick={handleCheckIn} className="cursor-pointer">
+                        Check In →
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={handleCheckOut} className="cursor-pointer">
+                        Check Out →
+                      </DropdownMenuItem>
+                    )}
+                  </>
                 )}
 
                 <DropdownMenuSeparator />
