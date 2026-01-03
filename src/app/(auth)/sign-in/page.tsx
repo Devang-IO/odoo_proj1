@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,12 +83,7 @@ export default function SignInPage() {
           </Button>
         </form>
 
-        <p className="text-center mt-6 text-sm text-gray-600">
-          Don&apos;t have an Account?{" "}
-          <Link href="/sign-up" className="text-purple-600 hover:underline">
-            Sign Up
-          </Link>
-        </p>
+
       </div>
     </div>
   );
