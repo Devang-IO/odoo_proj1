@@ -20,6 +20,7 @@ import { NewLeaveRequestDialog } from "@/components/time-off/new-leave-request-d
 import { LeaveRequestDetailsDialog } from "@/components/time-off/leave-request-details-dialog";
 import { StorageTest } from "@/components/debug/storage-test";
 import { DatabaseCheck } from "@/components/debug/database-check";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
 
 interface LeaveRequestWithEmployee extends Omit<LeaveRequest, 'employee'> {
   employee: {
@@ -183,199 +184,199 @@ export default function TimeOffPage() {
   }
 
   return (
-    <div>
-      {/* Debug Components - Remove in production */}
-      {isAdmin && (
-        <div className="mb-4 space-y-4">
-          <StorageTest />
-          <DatabaseCheck />
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="bg-blue-100 border border-blue-300 rounded-t-lg px-4 py-2">
-        <div className="flex items-center justify-between">
-          <h1 className="font-medium">Time Off</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchLeaveRequests}
-            className="flex items-center gap-2 bg-white"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Controls & Balance */}
-      <div className="bg-white border-x border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* NEW Button (Employee) */}
-            {!isAdmin && (
-              <Button
-                onClick={() => setShowNewDialog(true)}
-                className="bg-pink-400 hover:bg-pink-500 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                NEW
-              </Button>
-            )}
-
-            {/* Search (Admin) */}
-            {isAdmin && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Leave Balance (Employee) */}
-          {!isAdmin && leaveBalance && (
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-purple-600 font-medium">Paid Time Off</p>
-                <p className="text-sm text-gray-600">{leaveBalance.paid_leave} Days Available</p>
-              </div>
-              <div className="text-center">
-                <p className="text-orange-600 font-medium">Sick Time Off</p>
-                <p className="text-sm text-gray-600">{leaveBalance.sick_leave} Days Available</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-semibold text-gray-900">Time Off Requests</h1>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchLeaveRequests}
+                  className="flex items-center space-x-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Refresh</span>
+                </Button>
+                {!isAdmin && (
+                  <Button
+                    onClick={() => setShowNewDialog(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Request
+                  </Button>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border-x border-b border-gray-200 rounded-b-lg overflow-hidden">
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : filteredRequests.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No leave requests found
           </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Name</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Time Off Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Document</TableHead>
-                {isAdmin && <TableHead>Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRequests.map((request) => (
-                <TableRow 
-                  key={request.id} 
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleRowClick(request)}
-                >
-                  <TableCell>
-                    {request.employee.first_name} {request.employee.last_name}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(request.start_date), "dd/MM/yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(request.end_date), "dd/MM/yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <span className={getLeaveTypeColor(request.leave_type)}>
-                      {getLeaveTypeLabel(request.leave_type)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        request.status === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : request.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {request.status}
-                    </span>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {request.attachment_url ? (
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs text-blue-600">
-                          {isAdmin ? "Available" : "Uploaded"}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 text-xs">No document</span>
-                    )}
-                  </TableCell>
-                  {isAdmin && (
+
+          {/* Controls & Balance */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Search (Admin) */}
+                {isAdmin && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search employees..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 w-80"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Leave Balance (Employee) */}
+              {!isAdmin && leaveBalance && (
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-700">{leaveBalance.paid_leave}</div>
+                    <div className="text-sm text-purple-600">Paid Leave Days</div>
+                  </div>
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-orange-700">{leaveBalance.sick_leave}</div>
+                    <div className="text-sm text-orange-600">Sick Leave Days</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="p-6">
+              <TableSkeleton rows={6} columns={isAdmin ? 6 : 5} />
+            </div>
+          ) : filteredRequests.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-gray-400 text-lg mb-2">No leave requests found</div>
+              <p className="text-gray-500">
+                {!isAdmin ? "Click 'New Request' to submit your first leave request" : "Leave requests will appear here"}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-medium">Name</TableHead>
+                  <TableHead className="font-medium">Start Date</TableHead>
+                  <TableHead className="font-medium">End Date</TableHead>
+                  <TableHead className="font-medium">Type</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium">Document</TableHead>
+                  {isAdmin && <TableHead className="font-medium">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRequests.map((request) => (
+                  <TableRow 
+                    key={request.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleRowClick(request)}
+                  >
+                    <TableCell className="font-medium">
+                      {request.employee.first_name} {request.employee.last_name}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(request.start_date), "dd/MM/yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(request.end_date), "dd/MM/yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <span className={getLeaveTypeColor(request.leave_type)}>
+                        {getLeaveTypeLabel(request.leave_type)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                          request.status === "approved"
+                            ? "bg-green-100 text-green-800"
+                            : request.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {request.status}
+                      </span>
+                    </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      {request.status === "pending" ? (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() => handleApprove(request.id)}
-                            title="Approve request"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleReject(request.id)}
-                            title="Reject request"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
+                      {request.attachment_url ? (
+                        <div className="flex items-center space-x-1">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                          <span className="text-xs text-blue-600">
+                            {isAdmin ? "Available" : "Uploaded"}
+                          </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-500">
-                          {request.status === "approved" ? "Approved" : "Rejected"}
-                        </span>
+                        <span className="text-gray-400 text-xs">No document</span>
                       )}
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    {isAdmin && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {request.status === "pending" ? (
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => handleApprove(request.id)}
+                              title="Approve request"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleReject(request.id)}
+                              title="Reject request"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">
+                            {request.status === "approved" ? "Approved" : "Rejected"}
+                          </span>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        {/* Dialogs */}
+        {!isAdmin && employee && (
+          <NewLeaveRequestDialog
+            open={showNewDialog}
+            onOpenChange={setShowNewDialog}
+            employeeId={employee.id}
+            onSuccess={fetchLeaveRequests}
+          />
         )}
-      </div>
 
-      {/* New Leave Request Dialog */}
-      {!isAdmin && employee && (
-        <NewLeaveRequestDialog
-          open={showNewDialog}
-          onOpenChange={setShowNewDialog}
-          employeeId={employee.id}
-          onSuccess={fetchLeaveRequests}
+        <LeaveRequestDetailsDialog
+          request={selectedRequest}
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          isAdmin={isAdmin}
         />
-      )}
-
-      {/* Leave Request Details Dialog */}
-      <LeaveRequestDetailsDialog
-        request={selectedRequest}
-        open={showDetailsDialog}
-        onOpenChange={setShowDetailsDialog}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        isAdmin={isAdmin}
-      />
+      </div>
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
 import { useCurrentEmployee } from "@/hooks/use-current-employee";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
 
 interface AttendanceRecord {
   id: string;
@@ -153,174 +154,183 @@ export default function AttendancePage() {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="bg-blue-100 border border-blue-300 rounded-t-lg px-4 py-2">
-        <h1 className="font-medium">Attendance</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-xl font-semibold text-gray-900">Attendance</h1>
+          </div>
 
-      {/* Controls */}
-      <div className="bg-white border-x border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Navigation */}
-            <Button variant="outline" size="icon" onClick={handlePrevious}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleNext}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+          {/* Controls */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Navigation */}
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="sm" onClick={handlePrevious}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleNext}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
 
-            {/* Month Selector (Employee view) */}
-            {!isAdmin && (
-              <Select
-                value={format(selectedDate, "MMM")}
-                onValueChange={(month) => {
-                  const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(month);
-                  setSelectedDate(new Date(selectedDate.getFullYear(), monthIndex, 1));
-                }}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month) => (
-                    <SelectItem key={month} value={month}>{month}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+                {/* Month Selector (Employee view) */}
+                {!isAdmin && (
+                  <Select
+                    value={format(selectedDate, "MMM")}
+                    onValueChange={(month) => {
+                      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(month);
+                      setSelectedDate(new Date(selectedDate.getFullYear(), monthIndex, 1));
+                    }}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month) => (
+                        <SelectItem key={month} value={month}>{month}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Search (Admin view) */}
+                {isAdmin && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search employees..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 w-80"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-3">
+                {/* Date Picker (Admin view) */}
+                {isAdmin && (
+                  <Input
+                    type="date"
+                    value={format(selectedDate, "yyyy-MM-dd")}
+                    onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                    className="w-40"
+                  />
+                )}
+
+                {/* View Mode */}
+                <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Day</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Date Display */}
+            <div className="mt-4 text-center">
+              <p className="text-lg font-medium text-gray-900">
+                {viewMode === "day"
+                  ? format(selectedDate, "dd MMMM yyyy")
+                  : format(selectedDate, "MMMM yyyy")}
+              </p>
+            </div>
 
             {/* Stats (Employee view) */}
             {!isAdmin && viewMode === "month" && (
-              <div className="flex items-center gap-4 text-sm">
-                <div className="px-3 py-1 bg-green-50 border border-green-200 rounded">
-                  <span className="text-gray-600">Days Present:</span>{" "}
-                  <span className="font-medium">{stats.daysPresent}</span>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-green-700">{stats.daysPresent}</div>
+                  <div className="text-sm text-green-600">Days Present</div>
                 </div>
-                <div className="px-3 py-1 bg-blue-50 border border-blue-200 rounded">
-                  <span className="text-gray-600">Leaves:</span>{" "}
-                  <span className="font-medium">{stats.leavesCount}</span>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-700">{stats.leavesCount}</div>
+                  <div className="text-sm text-blue-600">Leaves</div>
                 </div>
-                <div className="px-3 py-1 bg-gray-50 border border-gray-200 rounded">
-                  <span className="text-gray-600">Total Working Days:</span>{" "}
-                  <span className="font-medium">{stats.totalWorkingDays}</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-gray-700">{stats.totalWorkingDays}</div>
+                  <div className="text-sm text-gray-600">Total Days</div>
                 </div>
               </div>
             )}
-
-            {/* Search (Admin view) */}
-            {isAdmin && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Date Picker (Admin view) */}
-            {isAdmin && (
-              <Input
-                type="date"
-                value={format(selectedDate, "yyyy-MM-dd")}
-                onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                className="w-40"
-              />
-            )}
-
-            {/* View Mode */}
-            <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Day</SelectItem>
-                <SelectItem value="month">Month</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
-      </div>
 
-      {/* Date Display */}
-      <div className="bg-white border-x border-gray-200 px-4 py-2 text-center">
-        <p className="text-sm text-gray-600">
-          {viewMode === "day"
-            ? format(selectedDate, "dd MMMM yyyy")
-            : format(selectedDate, "MMMM yyyy")}
-        </p>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-b-lg overflow-hidden">
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : filteredAttendance.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No attendance records found
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                {isAdmin ? (
-                  <TableHead>Emp</TableHead>
-                ) : (
-                  <TableHead>Date</TableHead>
-                )}
-                {isAdmin && viewMode === "month" && <TableHead>Date</TableHead>}
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Work Hours</TableHead>
-                <TableHead>Extra Hours</TableHead>
-                {isAdmin && <TableHead>Status</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAttendance.map((record) => (
-                <TableRow key={record.id}>
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="p-6">
+              <TableSkeleton rows={8} columns={isAdmin ? 7 : 5} />
+            </div>
+          ) : filteredAttendance.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-gray-400 text-lg mb-2">No attendance records found</div>
+              <p className="text-gray-500">Records will appear here once attendance is marked</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
                   {isAdmin ? (
-                    <TableCell>
-                      {record.employee?.first_name} {record.employee?.last_name}
-                    </TableCell>
+                    <TableHead className="font-medium">Employee</TableHead>
                   ) : (
-                    <TableCell>{format(new Date(record.date), "dd/MM/yyyy")}</TableCell>
+                    <TableHead className="font-medium">Date</TableHead>
                   )}
-                  {isAdmin && viewMode === "month" && (
-                    <TableCell>{format(new Date(record.date), "dd/MM/yyyy")}</TableCell>
-                  )}
-                  <TableCell>{formatTime(record.check_in)}</TableCell>
-                  <TableCell>{formatTime(record.check_out)}</TableCell>
-                  <TableCell>{formatHours(record.work_hours)}</TableCell>
-                  <TableCell>{formatHours(record.extra_hours)}</TableCell>
-                  {isAdmin && (
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          record.status === "present"
-                            ? "bg-green-100 text-green-700"
-                            : record.status === "half-day"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : record.status === "leave"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {record.status}
-                      </span>
-                    </TableCell>
-                  )}
+                  {isAdmin && viewMode === "month" && <TableHead className="font-medium">Date</TableHead>}
+                  <TableHead className="font-medium">Check In</TableHead>
+                  <TableHead className="font-medium">Check Out</TableHead>
+                  <TableHead className="font-medium">Work Hours</TableHead>
+                  <TableHead className="font-medium">Extra Hours</TableHead>
+                  {isAdmin && <TableHead className="font-medium">Status</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              </TableHeader>
+              <TableBody>
+                {filteredAttendance.map((record) => (
+                  <TableRow key={record.id} className="hover:bg-gray-50">
+                    {isAdmin ? (
+                      <TableCell className="font-medium">
+                        {record.employee?.first_name} {record.employee?.last_name}
+                      </TableCell>
+                    ) : (
+                      <TableCell className="font-medium">{format(new Date(record.date), "dd/MM/yyyy")}</TableCell>
+                    )}
+                    {isAdmin && viewMode === "month" && (
+                      <TableCell>{format(new Date(record.date), "dd/MM/yyyy")}</TableCell>
+                    )}
+                    <TableCell>{formatTime(record.check_in)}</TableCell>
+                    <TableCell>{formatTime(record.check_out)}</TableCell>
+                    <TableCell>{formatHours(record.work_hours)}</TableCell>
+                    <TableCell>{formatHours(record.extra_hours)}</TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            record.status === "present"
+                              ? "bg-green-100 text-green-800"
+                              : record.status === "half-day"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : record.status === "leave"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {record.status}
+                        </span>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import { Pencil, Plus, X, Camera } from "lucide-react";
 import { Employee, SalaryInfo } from "@/types";
 import { useCurrentEmployee } from "@/hooks/use-current-employee";
 import { SalaryInfoView } from "@/components/employees/salary-info-view";
+import { ProfileSkeleton } from "@/components/ui/loading-skeletons";
 
 export default function ProfilePage() {
   const supabase = createClient();
@@ -263,46 +264,63 @@ export default function ProfilePage() {
   };
 
   if (userLoading || loading) {
-    return <div className="text-center py-12 text-gray-500">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ProfileSkeleton />
+        </div>
+      </div>
+    );
   }
 
   if (!employee) {
-    return <div className="text-center py-12 text-gray-500">Profile not found</div>;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-16">
+            <div className="text-gray-400 text-lg mb-2">Profile not found</div>
+            <p className="text-gray-500">Unable to load your profile information</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="bg-blue-100 border border-blue-300 rounded-t-lg px-4 py-2">
-        <h1 className="font-medium">My Profile</h1>
-      </div>
-
-      <div className="bg-white border-x border-b border-gray-200 rounded-b-lg p-6">
-        {/* Profile Header */}
-        <div className="flex gap-6 mb-6">
-          {/* Avatar */}
-          <div className="relative">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={profilePreview || ""} />
-              <AvatarFallback className="bg-pink-100 text-pink-600 text-2xl">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
-            {editing && (
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 shadow-sm">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePictureChange}
-                  className="hidden"
-                />
-                <Camera className="w-4 h-4 text-gray-600" />
-              </label>
-            )}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-xl font-semibold text-gray-900">My Profile</h1>
           </div>
 
-          {/* Basic Info */}
-          <div className="flex-1">
+          <div className="p-6">
+            {/* Profile Header */}
+            <div className="flex items-start space-x-6 mb-8">
+              {/* Avatar */}
+              <div className="relative">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={profilePreview || ""} />
+                  <AvatarFallback className="bg-gray-100 text-gray-700 text-2xl font-medium">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                {editing && (
+                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 shadow-sm">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureChange}
+                      className="hidden"
+                    />
+                    <Camera className="w-4 h-4 text-gray-600" />
+                  </label>
+                )}
+              </div>
+
+              {/* Basic Info */}
+              <div className="flex-1">
             <h2 className="text-2xl font-semibold italic">
               {employee.first_name} {employee.last_name}
             </h2>
@@ -696,6 +714,8 @@ export default function ProfilePage() {
             </div>
           </TabsContent>
         </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

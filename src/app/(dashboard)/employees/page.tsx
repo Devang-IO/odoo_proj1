@@ -97,81 +97,98 @@ export default function EmployeesPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => setShowNewDialog(true)}
-            className="bg-pink-400 hover:bg-pink-500 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            NEW
-          </Button>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-64"
-            />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={() => setShowNewDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Employee
+            </Button>
+            
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search employees..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-80 bg-white shadow-sm"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
-      ) : filteredEmployees.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          {searchQuery ? "No employees found" : "No employees yet. Click NEW to add one."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredEmployees.map((employee) => (
-            <div
-              key={employee.id}
-              onClick={() => setSelectedEmployee(employee)}
-              className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow relative"
-            >
-              <div className="absolute top-3 right-3">
-                {getStatusIcon(employee.attendance_status)}
-              </div>
-              <div className="flex justify-center mb-3">
-                <Avatar className="w-16 h-16">
-                  {employee.profile_picture && (
-                    <AvatarImage src={employee.profile_picture} alt={`${employee.first_name} ${employee.last_name}`} />
-                  )}
-                  <AvatarFallback className="bg-gray-200 text-gray-600 text-lg">
-                    {getInitials(employee.first_name, employee.last_name)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <p className="text-center text-sm font-medium text-gray-700 truncate">
-                {employee.first_name} {employee.last_name}
-              </p>
+        {/* Employee Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-gray-400 text-lg mb-2">
+              {searchQuery ? "No employees found" : "No employees yet"}
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-gray-500">
+              {searchQuery ? "Try adjusting your search criteria" : "Click 'Add Employee' to get started"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredEmployees.map((employee) => (
+              <div
+                key={employee.id}
+                onClick={() => setSelectedEmployee(employee)}
+                className="bg-white border border-gray-200 rounded-lg p-6 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 relative"
+              >
+                <div className="absolute top-4 right-4">
+                  {getStatusIcon(employee.attendance_status)}
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <Avatar className="w-16 h-16 mb-4">
+                    {employee.profile_picture && (
+                      <AvatarImage src={employee.profile_picture} alt={`${employee.first_name} ${employee.last_name}`} />
+                    )}
+                    <AvatarFallback className="bg-gray-100 text-gray-700 text-lg font-medium">
+                      {getInitials(employee.first_name, employee.last_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-medium text-gray-900 truncate w-full">
+                    {employee.first_name} {employee.last_name}
+                  </h3>
+                  <p className="text-sm text-gray-500 truncate w-full mt-1">
+                    {employee.job_position || "No position"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-      <NewEmployeeDialog
-        open={showNewDialog}
-        onOpenChange={setShowNewDialog}
-        onSuccess={fetchEmployees}
-      />
-
-      {selectedEmployee && (
-        <EmployeeViewDialog
-          employee={selectedEmployee}
-          open={!!selectedEmployee}
-          onOpenChange={(open) => !open && setSelectedEmployee(null)}
-          onEmployeeDeleted={() => {
-            setSelectedEmployee(null);
-            fetchEmployees();
-          }}
+        {/* Dialogs */}
+        <NewEmployeeDialog
+          open={showNewDialog}
+          onOpenChange={setShowNewDialog}
+          onSuccess={fetchEmployees}
         />
-      )}
+
+        {selectedEmployee && (
+          <EmployeeViewDialog
+            employee={selectedEmployee}
+            open={!!selectedEmployee}
+            onOpenChange={(open) => !open && setSelectedEmployee(null)}
+            onEmployeeDeleted={() => {
+              setSelectedEmployee(null);
+              fetchEmployees();
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
