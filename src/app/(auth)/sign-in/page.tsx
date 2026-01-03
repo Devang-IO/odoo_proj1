@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DayflowLogo } from "@/components/ui/dayflow-logo";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -71,9 +72,7 @@ export default function SignInPage() {
       <div className="bg-white rounded-lg shadow-md p-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="bg-gray-800 text-white px-6 py-3 rounded">
-            <span className="text-lg font-semibold">Dayflow</span>
-          </div>
+          <DayflowLogo size="lg" />
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-6">

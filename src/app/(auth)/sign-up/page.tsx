@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Building2, User, Mail, Phone, Lock, Image } from "lucide-react";
+import { DayflowLogo } from "@/components/ui/dayflow-logo";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -178,9 +179,7 @@ export default function SignUpPage() {
       <div className="bg-white rounded-lg shadow-md p-8">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="bg-gray-800 text-white px-6 py-3 rounded">
-            <span className="text-lg font-semibold">Dayflow</span>
-          </div>
+          <DayflowLogo size="lg" />
         </div>
 
         <div className="text-center mb-6">

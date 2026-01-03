@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Employee, User } from "@/types";
 import { format } from "date-fns";
+import { DayflowLogo } from "@/components/ui/dayflow-logo";
 
 const navItems = [
   { label: "Employees", href: "/employees" },
@@ -163,8 +164,10 @@ export function Navbar() {
             <Link href="/employees" className="flex items-center space-x-3">
               {company?.logo_url ? (
                 <img src={company.logo_url} alt={company.name} className="h-8 w-auto" />
+              ) : company?.name ? (
+                <span className="font-semibold text-xl text-gray-900">{company.name}</span>
               ) : (
-                <span className="font-semibold text-xl text-gray-900">{company?.name || "Dayflow"}</span>
+                <DayflowLogo size="md" />
               )}
             </Link>
 
